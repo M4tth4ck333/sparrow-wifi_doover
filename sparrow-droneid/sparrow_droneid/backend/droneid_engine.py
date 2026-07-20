@@ -205,10 +205,13 @@ class ODIDParser:
             device.operator_lat = op_lat_raw / 1e7
             device.operator_lon = op_lon_raw / 1e7
 
-        # Operator altitude (at offset 17, uint16, * 0.5 - 1000)
-        # 0x0000 and 0xFFFF are both sentinels meaning "unknown/not available"
-        if len(data) >= 19:
-            op_alt = struct.unpack_from('<H', data, 17)[0]
+        # Operator altitude (OperatorAltitudeGeo, ODID System message bytes 18-19,
+        # uint16 LE, * 0.5 - 1000 metres). Byte 17 is the UA Category/Class byte;
+        # reading the uint16 there (the previous off-by-one) shifted the altitude's
+        # low byte into the high position and produced garbage ~24 km values.
+        # 0x0000 and 0xFFFF are both sentinels meaning "unknown/not available".
+        if len(data) >= 20:
+            op_alt = struct.unpack_from('<H', data, 18)[0]
             if op_alt not in (0x0000, 0xFFFF):
                 device.operator_alt = op_alt * 0.5 - 1000.0
 
